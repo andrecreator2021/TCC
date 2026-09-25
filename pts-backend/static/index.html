@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>PTS · Permissão de Trabalho Seguro</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg:#EDEFF1;
+  --surface:#FFFFFF;
+  --ink:#191D25;
+  --muted:#6B7280;
+  --muted2:#9AA1AB;
+  --line:#DBDFE3;
+  --yellow:#FFC629;
+  --yellow-ink:#191D25;
+  --danger:#D6293B;
+  --success:#1E8E5A;
+  --altura:#0077B6;
+  --confinado:#6D4C9F;
+  --eletricidade:#C98A00;
+  --quente:#D6293B;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(20,23,28,.06), 0 6px 18px rgba(20,23,28,.08);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.disp{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.02em;}
+
+#shell{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:96px;}
+
+/* App bar */
+.appbar{
+  background:var(--ink);
+  color:#fff;
+  padding:16px 18px 14px;
+  position:sticky; top:0; z-index:20;
+}
+.hazard-rule{
+  height:6px;
+  background:repeating-linear-gradient(135deg, var(--yellow) 0 10px, var(--ink) 10px 20px);
+}
+.appbar-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.appbar-title{font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:8px;}
+.appbar-sub{font-size:11px; color:#B7BCC4; margin-top:2px; letter-spacing:.02em;}
+.back-btn{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px 4px 0;}
+.me-row{display:flex;align-items:center;gap:6px;font-size:12px;color:#C7CBD2;margin-top:10px;}
+.me-row input{
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff;
+  border-radius:8px; padding:6px 9px; font-size:12px; font-family:'Inter',sans-serif; flex:1;
+}
+.me-row input::placeholder{color:#8B90A0;}
+
+/* Content */
+.content{padding:16px;}
+
+/* Filters */
+.chip-row{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 4px; margin-bottom:12px;}
+.chip{
+  flex:0 0 auto; padding:7px 13px; border-radius:999px; font-size:12.5px; font-weight:600;
+  border:1.5px solid var(--line); background:var(--surface); color:var(--muted); cursor:pointer; white-space:nowrap;
+}
+.chip.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+.search-box{
+  display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);
+  border-radius:12px;padding:9px 12px;margin-bottom:14px;
+}
+.search-box input{border:none;outline:none;flex:1;font-size:14px;font-family:'Inter',sans-serif;background:transparent;color:var(--ink);}
+
+/* Cards */
+.pts-card{
+  background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:14px 14px 14px 16px; margin-bottom:12px; cursor:pointer; position:relative; overflow:hidden;
+  border-left:6px solid var(--cat-color,#ccc);
+}
+.pts-card:active{transform:scale(.99);}
+.pts-card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+.pts-num{font-size:11px; color:var(--muted2); letter-spacing:.03em;}
+.pts-local{font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; text-transform:uppercase; margin-top:2px;}
+.pts-cat-label{font-size:12px; font-weight:600; margin-top:3px; display:flex; align-items:center; gap:5px;}
+.pts-meta{font-size:12px; color:var(--muted); margin-top:8px; display:flex; gap:12px; flex-wrap:wrap;}
+.status-badge{font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; flex:0 0 auto;}
+.status-aberta{background:#E4F5EC; color:var(--success);}
+.status-encerrada{background:#EDEFF1; color:var(--muted);}
+
+.empty-state{text-align:center; padding:60px 20px; color:var(--muted);}
+.empty-state .icon{font-size:38px; margin-bottom:10px;}
+.empty-state b{color:var(--ink); display:block; margin-bottom:4px; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.02em;}
+
+/* FAB */
+.fab{
+  position:fixed; bottom:24px; left:50%; transform:translateX(calc(-260px + 460px/2 - 0px));
+  z-index:30;
+}
+.fab-wrap{max-width:520px;margin:0 auto;position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:flex-end;padding:0 20px 22px;pointer-events:none;}
+.fab-btn{
+  pointer-events:all;
+  background:var(--yellow); color:var(--yellow-ink); border:none; width:58px; height:58px; border-radius:50%;
+  font-size:28px; box-shadow:0 6px 18px rgba(0,0,0,.25); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-weight:700;
+}
+
+/* Category picker */
+.cat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;}
+.cat-card{
+  background:var(--surface); border:2px solid var(--line); border-radius:var(--radius); padding:14px 10px; text-align:center; cursor:pointer;
+}
+.cat-card.sel{border-color:var(--cat-color); background:color-mix(in srgb, var(--cat-color) 8%, white);}
+.cat-icon{width:44px;height:44px;border-radius:50%;background:var(--cat-color);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+.cat-icon svg{width:24px;height:24px;fill:#fff;}
+.cat-name{font-family:'Oswald',sans-serif; font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.01em;}
+
+/* Section */
+.section{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:14px;}
+.section-title{font-family:'Oswald',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+.section-title .n{
+  width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+}
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; letter-spacing:.01em;}
+.field input[type=text], .field input[type=date], .field input[type=datetime-local], .field textarea, .field select{
+  width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14.5px; font-family:'Inter',sans-serif;
+  color:var(--ink); background:#FAFBFB; outline:none;
+}
+.field textarea{resize:vertical; min-height:64px;}
+.field input:focus, .field textarea:focus{border-color:var(--ink); background:#fff;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+.check-item{
+  display:flex; align-items:flex-start; gap:10px; padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer;
+}
+.check-item:last-child{border-bottom:none;}
+.check-box{
+  width:21px;height:21px;border-radius:6px;border:2px solid var(--line);flex:0 0 auto;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;background:#fff;
+}
+.check-box.on{background:var(--success); border-color:var(--success);}
+.check-box.on svg{width:13px;height:13px;fill:#fff;}
+.check-label{font-size:14px; line-height:1.4;}
+
+.progress-pill{font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; background:#F0F1F3; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+.progress-pill.done{background:#E4F5EC; color:var(--success);}
+
+/* Signature blocks */
+.sig-block{border:1.5px dashed var(--line); border-radius:12px; padding:12px; margin-bottom:12px; position:relative;}
+.sig-role{font-family:'Oswald',sans-serif; font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:8px;}
+.sig-preview{display:flex; align-items:center; gap:12px;}
+.sig-img-wrap{width:100px;height:56px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;}
+.sig-img-wrap img{width:100%;height:100%;object-fit:contain;}
+.sig-info{font-size:12px;color:var(--muted);}
+.sig-info b{color:var(--ink); display:block; font-size:13.5px;}
+.btn-sign{
+  background:var(--ink); color:#fff; border:none; padding:9px 14px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;
+}
+.btn-sign.signed{background:#EDEFF1; color:var(--success);}
+
+/* Buttons */
+.btn-primary{
+  width:100%; background:var(--yellow); color:var(--yellow-ink); border:none; padding:14px; border-radius:12px;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer;
+}
+.btn-primary:disabled{background:#E3E5E8; color:var(--muted2); cursor:not-allowed;}
+.btn-secondary{
+  width:100%; background:transparent; color:var(--ink); border:1.5px solid var(--line); padding:12px; border-radius:12px;
+  font-weight:600; font-size:13.5px; cursor:pointer; margin-top:8px;
+}
+.btn-danger-outline{
+  width:100%; background:transparent; color:var(--danger); border:1.5px solid var(--danger); padding:12px; border-radius:12px;
+  font-weight:600; font-size:13.5px; cursor:pointer; margin-top:8px;
+}
+.sticky-footer{
+  position:sticky; bottom:0; background:linear-gradient(180deg, rgba(237,239,241,0) 0%, var(--bg) 30%); padding:18px 0 4px; margin-top:4px;
+}
+.footer-hint{font-size:11.5px; color:var(--muted); text-align:center; margin-top:8px;}
+
+/* Detail view */
+.detail-header{border-radius:var(--radius); padding:18px; color:#fff; background:var(--cat-color,#333); margin-bottom:14px; position:relative; overflow:hidden;}
+.detail-header .stripe{position:absolute; top:0; left:0; right:0; height:5px; background:repeating-linear-gradient(135deg,#fff 0 8px, transparent 8px 16px); opacity:.35;}
+.detail-num{font-family:'IBM Plex Mono',monospace; font-size:12px; opacity:.85;}
+.detail-title{font-family:'Oswald',sans-serif; font-size:22px; font-weight:700; text-transform:uppercase; margin:4px 0 2px;}
+.detail-cat{font-size:13px; opacity:.9;}
+.kv{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+.kv:last-child{border-bottom:none;}
+.kv .k{color:var(--muted); flex:0 0 42%;}
+.kv .v{text-align:right; font-weight:500;}
+.check-readonly{display:flex; gap:8px; padding:7px 0; font-size:13.5px; align-items:flex-start;}
+.check-readonly svg{width:16px;height:16px;fill:var(--success); flex:0 0 auto; margin-top:2px;}
+
+.stamp-badge{
+  position:absolute; top:10px; right:10px; width:56px; height:56px; transform:rotate(-9deg); opacity:.92;
+}
+
+/* Modal */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(15,17,22,.55); z-index:100; display:flex; align-items:flex-end; justify-content:center;
+}
+.modal-sheet{
+  background:#fff; width:100%; max-width:520px; border-radius:18px 18px 0 0; padding:18px; box-shadow:0 -8px 30px rgba(0,0,0,.3);
+  max-height:88vh; overflow-y:auto;
+}
+.modal-title{font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; text-transform:uppercase; margin-bottom:4px;}
+.modal-sub{font-size:12.5px; color:var(--muted); margin-bottom:14px;}
+canvas{width:100%; height:180px; border:2px dashed var(--line); border-radius:12px; background:#FAFBFB; touch-action:none; display:block;}
+.canvas-actions{display:flex; gap:10px; margin-top:10px;}
+.canvas-actions button{flex:1;}
+.btn-clear{background:#F0F1F3; color:var(--ink); border:none; padding:11px; border-radius:10px; font-weight:600; font-size:13px; cursor:pointer;}
+.btn-close-modal{background:transparent; border:none; color:var(--muted); font-size:13px; padding:10px; width:100%; text-align:center; cursor:pointer;}
+
+/* Toast */
+#toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:11px 20px;
+  border-radius:999px; font-size:13px; z-index:200; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; font-weight:500;
+  box-shadow:0 6px 18px rgba(0,0,0,.3);
+}
+#toast.show{opacity:1; transform:translate(-50%,-6px);}
+
+.loading-row{text-align:center; padding:50px 0; color:var(--muted); font-size:13.5px;}
+
+/* Validação facial */
+.face-wrap{position:relative; width:100%; aspect-ratio:4/3; max-height:220px; border-radius:12px; overflow:hidden; background:#0B0D11; margin-bottom:10px;}
+.face-wrap video, .face-wrap img, .face-wrap canvas{width:100%; height:100%; object-fit:cover; display:block;}
+.face-video{transform:scaleX(-1);}
+.face-actions{display:flex; gap:10px; margin-bottom:6px;}
+.face-actions button{flex:1;}
+.btn-face{background:var(--ink); color:#fff; border:none; padding:10px; border-radius:10px; font-weight:600; font-size:13px; cursor:pointer;}
+.btn-face:disabled{background:#E3E5E8; color:var(--muted2); cursor:not-allowed;}
+.face-status{font-size:11.5px; color:var(--muted); margin-bottom:14px; line-height:1.4;}
+.face-img-wrap{width:52px; height:52px; border-radius:50%; overflow:hidden; border:1.5px solid var(--line); flex:0 0 auto; background:#fff;}
+.face-img-wrap img{width:100%; height:100%; object-fit:cover;}
+
+/* Contatos de envio */
+.contact-row{display:flex; gap:8px; margin-bottom:10px;}
+.contact-row select{flex:0 0 108px; border:1.5px solid var(--line); border-radius:10px; padding:9px 6px; font-size:12.5px; font-family:'Inter',sans-serif; background:#FAFBFB; color:var(--ink);}
+.contact-row input{flex:1; min-width:0; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-size:13.5px; font-family:'Inter',sans-serif; background:#FAFBFB; color:var(--ink);}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div id="app"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ===================== DADOS / CONFIG ===================== */
+const CATS = {
+  altura:{ label:'Trabalho em Altura', code:'ALT', color:'var(--altura)', hex:'#0077B6',
+    icon:'<path d="M4 18 L9.5 8 L13 13 L16.5 8 L21 18 Z"/>' },
+  confinado:{ label:'Espaço Confinado', code:'CONF', color:'var(--confinado)', hex:'#6D4C9F',
+    icon:'<path d="M12 2 L20 7 V17 L12 22 L4 17 V7 Z" fill-opacity=".35"/><circle cx="12" cy="12" r="3.4"/>' },
+  eletricidade:{ label:'Eletricidade', code:'ELE', color:'var(--eletricidade)', hex:'#C98A00',
+    icon:'<path d="M13 2 L4 14 H10 L9 22 L20 9 H13 Z"/>' },
+  quente:{ label:'Trabalho a Quente', code:'QNT', color:'var(--quente)', hex:'#D6293B',
+    icon:'<path d="M12 2c-2 5-6 6-6 11a6 6 0 0 0 12 0c0-2.5-1.2-4-2.4-5.2.2 2-1 3.4-2 2.6-1.3-1-.2-3.6-1.6-8.4z"/>' }
+};
+
+const CHECKLISTS = {
+  altura:[
+    "Pontos de ancoragem inspecionados e aprovados",
+    "Cinto de segurança tipo paraquedista em bom estado",
+    "Talabarte duplo com absorvedor de energia",
+    "Trava-quedas ou linha de vida instalado",
+    "Área abaixo isolada e sinalizada",
+    "Condições climáticas favoráveis (sem vento forte ou chuva)",
+    "Capacete com jugular utilizado",
+    "Análise de Risco (APR) revisada com a equipe"
+  ],
+  confinado:[
+    "Teste atmosférico realizado (O2, LEL, gases tóxicos)",
+    "Ventilação forçada instalada e testada",
+    "Vigia de entrada posicionado e treinado",
+    "Plano de resgate definido e equipamento disponível",
+    "Iluminação adequada (antichama, se necessário)",
+    "Entrada isolada e sinalizada",
+    "Comunicação estabelecida entre vigia e executante"
+  ],
+  eletricidade:[
+    "Desenergização confirmada",
+    "Bloqueio e etiquetagem (LOTO) aplicados",
+    "Teste de ausência de tensão realizado",
+    "Aterramento temporário instalado, se aplicável",
+    "EPIs dielétricos verificados (luvas, calçado)",
+    "Ferramentas isoladas em bom estado",
+    "Zona de risco isolada e sinalizada"
+  ],
+  quente:[
+    "Área isolada e sinalizada",
+    "Materiais inflamáveis removidos ou protegidos (raio mín. 10m)",
+    "Extintor de incêndio disponível no local",
+    "Vigia contra incêndio designado",
+    "Verificação pós-trabalho por 30 min após conclusão",
+    "Ventilação adequada para fumos e gases"
+  ]
+};
+
+const EPI_COMUM = [
+  "Capacete de segurança",
+  "Óculos de proteção",
+  "Luvas apropriadas ao risco",
+  "Calçado de segurança",
+  "Protetor auricular (quando aplicável)",
+  "Uniforme / vestimenta adequada"
+];
+
+const CHECK_SVG = '<svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"/></svg>';
+
+/* ===================== ESTADO ===================== */
+const St = {
+  view:'home',
+  loading:true,
+  records:[],
+  currentId:null,
+  filterCat:'todas',
+  filterStatus:'todas',
+  search:'',
+  meuNome:'',
+  form:null,
+  sigModal:null,   // { role } ou { role:'encerramento' }
+  canvas:null,
+  faceStream:null, // stream ativo da câmera durante a captura facial
+  facePhoto:null   // dataURL da foto facial capturada, pendente de confirmação
+};
+
+/* ===================== API (backend Python/Flask) ===================== */
+async function fetchAllRecords(){
+  try{
+    const res = await fetch('/api/pts');
+    if(!res.ok) return [];
+    return await res.json();
+  }catch(e){ console.error('Erro ao carregar', e); return []; }
+}
+async function criarRecordNoServidor(rec){
+  try{
+    const res = await fetch('/api/pts', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rec)
+    });
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ console.error(e); return null; }
+}
+async function encerrarRecordNoServidor(id, payload){
+  try{
+    const res = await fetch('/api/pts/'+id+'/encerrar', {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ console.error(e); return null; }
+}
+async function deleteRecordFromStorage(id){
+  try{ const res = await fetch('/api/pts/'+id, { method:'DELETE' }); return res.ok; }
+  catch(e){ console.error(e); return false; }
+}
+async function loadMeuNome(){
+  St.meuNome = localStorage.getItem('meuNome') || '';
+}
+async function saveMeuNome(nome){
+  St.meuNome = nome;
+  try{ localStorage.setItem('meuNome', nome); }catch(e){}
+}
+
+/* ===================== HELPERS ===================== */
+function uid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDateTime(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function nextNumero(cat){
+  const year = new Date().getFullYear();
+  const count = St.records.filter(r=>r.categoria===cat).length + 1;
+  return 'PTS-'+CATS[cat].code+'-'+year+'-'+String(count).padStart(3,'0');
+}
+function emptyForm(){
+  return {
+    id:null, categoria:null, numero:'', dataEmissao:todayISO(), local:'', empresa:'',
+    descricao:'', validadeInicio:'', validadeFim:'', equipe:'',
+    checklistRisco:{}, checklistEpi:{},
+    assinaturas:{ emitente:null, executante:null, supervisor:null },
+    contatosEnvio:[ {tipo:'email', valor:''}, {tipo:'email', valor:''}, {tipo:'email', valor:''} ],
+    status:'aberta', encerramento:null, createdAt:null
+  };
+}
+function onlyDigitsWithCountry(v){
+  // remove tudo que não é dígito; se não tiver código de país, assume Brasil (55)
+  let d = (v||'').replace(/\D/g,'');
+  if(d.length>0 && d.length<=11) d = '55'+d;
+  return d;
+}
+function checklistProgress(form){
+  if(!form.categoria) return {done:0,total:0};
+  const riscoTotal = CHECKLISTS[form.categoria].length;
+  const epiTotal = EPI_COMUM.length;
+  const total = riscoTotal+epiTotal;
+  const done = Object.values(form.checklistRisco).filter(Boolean).length + Object.values(form.checklistEpi).filter(Boolean).length;
+  return {done, total};
+}
+function allSigned(form){
+  return form.assinaturas.emitente && form.assinaturas.executante && form.assinaturas.supervisor;
+}
+function svgIcon(cat, size){
+  return '<svg viewBox="0 0 24 24" style="width:'+size+'px;height:'+size+'px">'+CATS[cat].icon+'</svg>';
+}
+function stampSVG(hex){
+  return '<svg viewBox="0 0 100 100">'+
+    '<circle cx="50" cy="50" r="46" fill="none" stroke="'+hex+'" stroke-width="3" stroke-dasharray="4 4"/>'+
+    '<circle cx="50" cy="50" r="36" fill="none" stroke="'+hex+'" stroke-width="2.5"/>'+
+    '<path d="M32 51 L44 63 L69 36" fill="none" stroke="'+hex+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '</svg>';
+}
+
+/* ===================== RENDER MASTER ===================== */
+async function render(){
+  const app = document.getElementById('app');
+  if(St.loading){
+    app.innerHTML = renderAppBar('Carregando…')+'<div class="content"><div class="loading-row">Carregando permissões…</div></div>';
+    return;
+  }
+  if(St.view==='home') app.innerHTML = renderHome();
+  else if(St.view==='form') app.innerHTML = renderForm();
+  else if(St.view==='detail') app.innerHTML = renderDetail();
+
+  if(St.sigModal) renderSignatureModal();
+}
+
+function renderAppBar(title, opts){
+  opts = opts||{};
+  return '<div class="appbar">'+
+    '<div class="appbar-row">'+
+      (opts.back? '<button class="back-btn" onclick="App.goHome()">←</button>' : '')+
+      '<div style="flex:1">'+
+        '<div class="appbar-title">'+(opts.icon||'🦺')+' '+title+'</div>'+
+        (opts.sub? '<div class="appbar-sub">'+opts.sub+'</div>' : '')+
+      '</div>'+
+    '</div>'+
+    (opts.showMe? '<div class="me-row">Você: <input type="text" value="'+escAttr(St.meuNome)+'" placeholder="seu nome (opcional)" onchange="App.setMeuNome(this.value)"></div>' : '')+
+    '</div><div class="hazard-rule"></div>';
+}
+function escAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ===================== HOME ===================== */
+function renderHome(){
+  let list = St.records.slice();
+  if(St.filterCat!=='todas') list = list.filter(r=>r.categoria===St.filterCat);
+  if(St.filterStatus!=='todas') list = list.filter(r=>r.status===St.filterStatus);
+  if(St.search.trim()){
+    const q = St.search.toLowerCase();
+    list = list.filter(r=> (r.local+' '+r.numero+' '+r.empresa).toLowerCase().includes(q));
+  }
+
+  let html = renderAppBar('PTS', {icon:'🦺', sub:'Permissões de Trabalho Seguro · equipe', showMe:true});
+  html += '<div class="content">';
+
+  html += '<div class="search-box">🔎<input type="text" placeholder="Buscar por local, número ou empresa" value="'+escAttr(St.search)+'" oninput="App.setSearch(this.value)"></div>';
+
+  html += '<div class="chip-row">';
+  html += '<div class="chip '+(St.filterCat==='todas'?'active':'')+'" onclick="App.setFilterCat(\'todas\')">Todas</div>';
+  Object.keys(CATS).forEach(c=>{
+    html += '<div class="chip '+(St.filterCat===c?'active':'')+'" onclick="App.setFilterCat(\''+c+'\')">'+CATS[c].label+'</div>';
+  });
+  html += '</div>';
+  html += '<div class="chip-row">';
+  html += '<div class="chip '+(St.filterStatus==='todas'?'active':'')+'" onclick="App.setFilterStatus(\'todas\')">Status: todos</div>';
+  html += '<div class="chip '+(St.filterStatus==='aberta'?'active':'')+'" onclick="App.setFilterStatus(\'aberta\')">Abertas</div>';
+  html += '<div class="chip '+(St.filterStatus==='encerrada'?'active':'')+'" onclick="App.setFilterStatus(\'encerrada\')">Encerradas</div>';
+  html += '</div>';
+
+  if(list.length===0){
+    html += '<div class="empty-state"><div class="icon">📋</div><b>Nenhuma PTS encontrada</b>Toque no botão + para emitir a primeira permissão.</div>';
+  } else {
+    list.forEach(r=>{
+      const cat = CATS[r.categoria];
+      const prog = checklistProgress(r);
+      html += '<div class="pts-card" style="--cat-color:'+cat.hex+'" onclick="App.openDetail(\''+r.id+'\')">'+
+        '<div class="pts-card-top">'+
+          '<div>'+
+            '<div class="pts-num mono">'+r.numero+'</div>'+
+            '<div class="pts-local">'+escHtml(r.local||'Local não informado')+'</div>'+
+            '<div class="pts-cat-label" style="color:'+cat.hex+'">'+svgIconInline(cat,14)+' '+cat.label+'</div>'+
+          '</div>'+
+          '<div class="status-badge status-'+r.status+'">'+(r.status==='aberta'?'Ativa':'Encerrada')+'</div>'+
+        '</div>'+
+        '<div class="pts-meta">'+
+          '<span>📅 '+fmtDateTime(new Date(r.dataEmissao+'T00:00:00').getTime()).split(' às')[0]+'</span>'+
+          '<span>🏢 '+escHtml(r.empresa||'—')+'</span>'+
+          '<span class="progress-pill '+(prog.done===prog.total?'done':'')+'">'+prog.done+'/'+prog.total+' itens</span>'+
+        '</div>'+
+      '</div>';
+    });
+  }
+  html += '</div>';
+  html += '<div class="fab-wrap"><button class="fab-btn" onclick="App.openForm()">+</button></div>';
+  return html;
+}
+function svgIconInline(cat, size){
+  return '<svg viewBox="0 0 24 24" style="width:'+size+'px;height:'+size+'px;fill:'+cat.hex+'">'+cat.icon+'</svg>';
+}
+
+/* ===================== FORM (NOVA PTS) ===================== */
+function renderForm(){
+  const f = St.form;
+  let html = renderAppBar('Nova PTS', {icon:'📝', back:true});
+  html += '<div class="content">';
+
+  // Categoria
+  html += '<div class="section"><div class="section-title"><span class="n">1</span>Categoria de risco</div><div class="cat-grid">';
+  Object.keys(CATS).forEach(c=>{
+    const cat = CATS[c];
+    html += '<div class="cat-card '+(f.categoria===c?'sel':'')+'" style="--cat-color:'+cat.hex+'" onclick="App.selectCategoria(\''+c+'\')">'+
+      '<div class="cat-icon">'+svgIcon(c,24)+'</div><div class="cat-name">'+cat.label+'</div></div>';
+  });
+  html += '</div></div>';
+
+  if(!f.categoria){
+    html += '<div class="footer-hint">Selecione a categoria para continuar o preenchimento.</div></div>';
+    return html;
+  }
+
+  // Dados gerais
+  html += '<div class="section"><div class="section-title"><span class="n">2</span>Dados gerais</div>';
+  html += '<div class="field"><label>Nº da PTS</label><input type="text" class="mono" value="'+f.numero+'" disabled></div>';
+  html += '<div class="row2"><div class="field"><label>Data de emissão</label><input type="date" value="'+f.dataEmissao+'" onchange="App.updateField(\'dataEmissao\',this.value)"></div>'+
+    '<div class="field"><label>Empresa executante</label><input type="text" placeholder="Ex: Contrata Ltda" value="'+escAttr(f.empresa)+'" oninput="App.updateField(\'empresa\',this.value)"></div></div>';
+  html += '<div class="field"><label>Local / Setor</label><input type="text" placeholder="Ex: Telhado do galpão 3" value="'+escAttr(f.local)+'" oninput="App.updateField(\'local\',this.value)"></div>';
+  html += '<div class="row2"><div class="field"><label>Validade – início</label><input type="datetime-local" value="'+f.validadeInicio+'" onchange="App.updateField(\'validadeInicio\',this.value)"></div>'+
+    '<div class="field"><label>Validade – fim</label><input type="datetime-local" value="'+f.validadeFim+'" onchange="App.updateField(\'validadeFim\',this.value)"></div></div>';
+  html += '<div class="field"><label>Descrição do trabalho</label><textarea placeholder="Descreva a atividade a ser executada" oninput="App.updateField(\'descricao\',this.value)">'+escHtml(f.descricao)+'</textarea></div>';
+  html += '<div class="field"><label>Equipe executante</label><textarea placeholder="Nomes da equipe, um por linha" oninput="App.updateField(\'equipe\',this.value)">'+escHtml(f.equipe)+'</textarea></div>';
+  html += '</div>';
+
+  // Checklist
+  const prog = checklistProgress(f);
+  html += '<div class="section"><div class="section-title"><span class="n">3</span>Checklist de segurança <span class="progress-pill '+(prog.done===prog.total?'done':'')+'" style="margin-left:auto">'+prog.done+'/'+prog.total+'</span></div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin:-6px 0 8px;font-weight:600;">EPIs obrigatórios</div>';
+  EPI_COMUM.forEach((item,i)=>{
+    const on = !!f.checklistEpi[i];
+    html += checkItemHtml('epi', i, item, on);
+  });
+  html += '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600;">Específico — '+CATS[f.categoria].label+'</div>';
+  CHECKLISTS[f.categoria].forEach((item,i)=>{
+    const on = !!f.checklistRisco[i];
+    html += checkItemHtml('risco', i, item, on);
+  });
+  html += '</div>';
+
+  // Assinaturas
+  html += '<div class="section"><div class="section-title"><span class="n">4</span>Assinaturas</div>';
+  html += sigBlockHtml('emitente','Emitente / Técnico de Segurança', f);
+  html += sigBlockHtml('executante','Executante Responsável', f);
+  html += sigBlockHtml('supervisor','Responsável pela Área', f);
+  html += '</div>';
+
+  // Contatos de envio
+  html += '<div class="section"><div class="section-title"><span class="n">5</span>Envio da PTS (opcional)</div>';
+  html += '<div class="footer-hint" style="text-align:left;margin:-4px 0 12px">Cadastre até 3 contatos para receber o PDF da PTS emitida por e-mail ou WhatsApp.</div>';
+  f.contatosEnvio.forEach((c,i)=>{
+    html += '<div class="contact-row">'+
+      '<select onchange="App.updateContato('+i+',\'tipo\',this.value)">'+
+        '<option value="email" '+(c.tipo==='email'?'selected':'')+'>E-mail</option>'+
+        '<option value="whatsapp" '+(c.tipo==='whatsapp'?'selected':'')+'>WhatsApp</option>'+
+      '</select>'+
+      '<input type="text" placeholder="'+(c.tipo==='whatsapp'?'(11) 99999-9999':'nome@empresa.com')+'" value="'+escAttr(c.valor)+'" oninput="App.updateContato('+i+',\'valor\',this.value)">'+
+    '</div>';
+  });
+  html += '</div>';
+
+  // Submit
+  const ready = prog.done===prog.total && allSigned(f) && f.local.trim() && f.categoria;
+  html += '<div class="sticky-footer">';
+  html += '<button class="btn-primary" '+(ready?'':'disabled')+' onclick="App.submitPTS()">Emitir PTS</button>';
+  if(!ready){
+    const faltam = [];
+    if(prog.done!==prog.total) faltam.push((prog.total-prog.done)+' item(ns) do checklist');
+    if(!allSigned(f)) faltam.push('assinatura(s) pendente(s)');
+    if(!f.local.trim()) faltam.push('local');
+    html += '<div class="footer-hint">Pendente: '+faltam.join(' · ')+'</div>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+function checkItemHtml(section, idx, label, on){
+  return '<div class="check-item" onclick="App.toggleCheck(\''+section+'\','+idx+')">'+
+    '<div class="check-box '+(on?'on':'')+'">'+(on?CHECK_SVG:'')+'</div>'+
+    '<div class="check-label">'+escHtml(label)+'</div></div>';
+}
+function sigBlockHtml(role, label, f){
+  const sig = f.assinaturas[role];
+  let html = '<div class="sig-block"><div class="sig-role">'+label+'</div>';
+  if(sig){
+    html += '<div class="sig-preview">'+
+      (sig.foto? '<div class="face-img-wrap"><img src="'+sig.foto+'"></div>' : '')+
+      '<div class="sig-img-wrap"><img src="'+sig.imagem+'"></div>'+
+      '<div class="sig-info"><b>'+escHtml(sig.nome)+'</b>Assinado em '+fmtDateTime(sig.dataHora)+'<br>✅ Identidade validada por foto facial</div>'+
+    '</div>'+
+    '<button class="btn-sign signed" style="margin-top:10px;width:100%" onclick="App.openSig(\''+role+'\')">✓ Assinado — refazer</button>';
+  } else {
+    html += '<button class="btn-sign" style="width:100%" onclick="App.openSig(\''+role+'\')">Validar rosto e assinar</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ===================== DETAIL ===================== */
+function renderDetail(){
+  const r = St.records.find(x=>x.id===St.currentId);
+  if(!r){ St.view='home'; return renderHome(); }
+  const cat = CATS[r.categoria];
+  let html = renderAppBar('Detalhes', {icon:'📄', back:true});
+  html += '<div class="content">';
+
+  html += '<div class="detail-header" style="--cat-color:'+cat.hex+'"><div class="stripe"></div>'+
+    (r.status==='encerrada'? '<div class="stamp-badge">'+stampSVG('#ffffff')+'</div>' : '')+
+    '<div class="detail-num mono">'+r.numero+'</div>'+
+    '<div class="detail-title">'+escHtml(r.local)+'</div>'+
+    '<div class="detail-cat">'+cat.label+' · '+(r.status==='aberta'?'Permissão ativa':'Permissão encerrada')+'</div>'+
+    '</div>';
+
+  html += '<div class="section"><div class="section-title">Dados gerais</div>'+
+    kv('Empresa executante', r.empresa||'—')+
+    kv('Data de emissão', new Date(r.dataEmissao+'T00:00:00').toLocaleDateString('pt-BR'))+
+    kv('Validade', fmtWindow(r.validadeInicio, r.validadeFim))+
+    kv('Equipe', (r.equipe||'—').replace(/\n/g,', '))+
+    '</div>';
+
+  html += '<div class="section"><div class="section-title">Descrição do trabalho</div><div style="font-size:14px;line-height:1.5">'+escHtml(r.descricao||'—')+'</div></div>';
+
+  html += '<div class="section"><div class="section-title">Checklist de segurança</div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;">EPIs</div>';
+  EPI_COMUM.forEach((item,i)=>{ if(r.checklistEpi[i]) html += checkReadonly(item); });
+  html += '<div style="font-size:12px;color:var(--muted);margin:12px 0 6px;font-weight:600;">Específico — '+cat.label+'</div>';
+  CHECKLISTS[r.categoria].forEach((item,i)=>{ if(r.checklistRisco[i]) html += checkReadonly(item); });
+  html += '</div>';
+
+  html += '<div class="section"><div class="section-title">Assinaturas</div>';
+  ['emitente','executante','supervisor'].forEach(role=>{
+    const labels = {emitente:'Emitente / Técnico de Segurança', executante:'Executante Responsável', supervisor:'Responsável pela Área'};
+    const sig = r.assinaturas[role];
+    html += '<div class="sig-block" style="border-style:solid"><div class="sig-role">'+labels[role]+'</div>';
+    if(sig){
+      html += '<div class="sig-preview">'+
+        (sig.foto? '<div class="face-img-wrap"><img src="'+sig.foto+'"></div>' : '')+
+        '<div class="sig-img-wrap"><img src="'+sig.imagem+'"></div>'+
+        '<div class="sig-info"><b>'+escHtml(sig.nome)+'</b>'+fmtDateTime(sig.dataHora)+'</div></div>';
+    } else { html += '<div style="color:var(--muted);font-size:13px">Não assinado</div>'; }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if(r.status==='encerrada' && r.encerramento){
+    html += '<div class="section" style="border:1.5px solid var(--success)"><div class="section-title" style="color:var(--success)">✓ Encerramento</div>'+
+      '<div class="sig-preview">'+
+      (r.encerramento.foto? '<div class="face-img-wrap"><img src="'+r.encerramento.foto+'"></div>' : '')+
+      '<div class="sig-img-wrap"><img src="'+r.encerramento.imagem+'"></div>'+
+      '<div class="sig-info"><b>'+escHtml(r.encerramento.nome)+'</b>'+fmtDateTime(r.encerramento.dataHora)+'</div></div>'+
+      (r.encerramento.observacoes? '<div style="margin-top:10px;font-size:13.5px;color:var(--muted)">"'+escHtml(r.encerramento.observacoes)+'"</div>' : '')+
+      '</div>';
+  }
+
+  html += renderEnvioSection(r);
+
+  if(r.status==='aberta'){
+    html += '<button class="btn-primary" onclick="App.openEncerrar()">Encerrar PTS</button>';
+  }
+  html += '<button class="btn-danger-outline" onclick="App.confirmDelete()">Excluir permissão</button>';
+
+  html += '</div>';
+  return html;
+}
+function renderEnvioSection(r){
+  const contatos = (r.contatosEnvio||[]).filter(c=>c.valor && c.valor.trim());
+  let html = '<div class="section"><div class="section-title">📤 Envio da PTS</div>';
+  html += '<button class="btn-secondary" style="margin-top:0" onclick="App.baixarPDF()">⬇ Baixar PDF da PTS</button>';
+  if(contatos.length){
+    contatos.forEach(c=>{
+      const idx = r.contatosEnvio.indexOf(c);
+      const icone = c.tipo==='whatsapp' ? '💬' : '✉️';
+      html += '<button class="btn-secondary" onclick="App.enviarPara('+idx+')">'+icone+' Enviar para '+escHtml(c.valor)+'</button>';
+    });
+  } else {
+    html += '<div class="footer-hint" style="margin-top:10px">Nenhum contato cadastrado para esta PTS.</div>';
+  }
+  html += '<div class="footer-hint" style="margin-top:10px;text-align:left">O servidor gera o PDF e envia automaticamente para o contato — não é mais necessário anexar nada manualmente.</div>';
+  html += '</div>';
+  return html;
+}
+function kv(k,v){ return '<div class="kv"><div class="k">'+k+'</div><div class="v">'+escHtml(v)+'</div></div>'; }
+function checkReadonly(label){ return '<div class="check-readonly">'+CHECK_SVG+escHtml(label)+'</div>'; }
+function fmtWindow(ini,fim){
+  if(!ini && !fim) return '—';
+  const f = (s)=> s ? new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+  return f(ini)+' até '+f(fim);
+}
+
+/* ===================== SIGNATURE MODAL ===================== */
+function renderSignatureModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'sigOverlay';
+  const isEncerramento = St.sigModal.role==='encerramento';
+  const roleLabels = {emitente:'Emitente / Técnico de Segurança', executante:'Executante Responsável', supervisor:'Responsável pela Área', encerramento:'Encerramento da PTS'};
+  overlay.innerHTML =
+    '<div class="modal-sheet">'+
+      '<div class="modal-title">'+roleLabels[St.sigModal.role]+'</div>'+
+      '<div class="modal-sub">'+(isEncerramento? 'Valide seu rosto, confirme a conclusão segura do trabalho e assine para encerrar esta PTS.' : 'Valide seu rosto e assine para confirmar sua identidade.')+'</div>'+
+      '<div class="field"><label>Nome completo</label><input type="text" id="sigName" value="'+escAttr(St.meuNome||'')+'" placeholder="Digite o nome"></div>'+
+      (isEncerramento? '<div class="field"><label>Observações (opcional)</label><textarea id="sigObs" placeholder="Ex: trabalho concluído sem intercorrências"></textarea></div>' : '')+
+
+      '<label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">1. Validação facial</label>'+
+      '<div class="face-wrap">'+
+        '<video id="faceVideo" class="face-video" autoplay playsinline muted></video>'+
+        '<canvas id="faceCanvas" style="display:none"></canvas>'+
+        '<img id="facePreview" style="display:none">'+
+      '</div>'+
+      '<div class="face-actions">'+
+        '<button class="btn-face" id="faceCaptureBtn" onclick="App.capturePhoto()">📷 Capturar foto</button>'+
+        '<button class="btn-face" id="faceRetakeBtn" style="display:none" onclick="App.retakePhoto()">↺ Repetir foto</button>'+
+      '</div>'+
+      '<div class="face-status" id="faceStatus">Solicitando acesso à câmera…</div>'+
+
+      '<label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">2. Assinatura</label>'+
+      '<canvas id="sigCanvas"></canvas>'+
+      '<div class="canvas-actions"><button class="btn-clear" onclick="App.clearSig()">Limpar</button>'+
+      '<button class="btn-primary" style="margin:0" onclick="App.confirmSig()">Confirmar</button></div>'+
+      '<button class="btn-close-modal" onclick="App.closeSigModal()">Cancelar</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  initCanvas();
+  initFaceCapture();
+}
+async function initFaceCapture(){
+  const video = document.getElementById('faceVideo');
+  const statusEl = document.getElementById('faceStatus');
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:480}, height:{ideal:360} }, audio:false });
+    St.faceStream = stream;
+    if(video){ video.srcObject = stream; }
+    if(statusEl) statusEl.textContent = 'Posicione o rosto dentro do quadro e toque em "Capturar foto".';
+  }catch(e){
+    if(statusEl) statusEl.textContent = 'Não foi possível acessar a câmera. Verifique as permissões do navegador para concluir a validação facial.';
+    const btn = document.getElementById('faceCaptureBtn'); if(btn) btn.disabled = true;
+  }
+}
+function stopFaceStream(){
+  if(St.faceStream){ St.faceStream.getTracks().forEach(t=>t.stop()); }
+  St.faceStream = null;
+  St.facePhoto = null;
+}
+function initCanvas(){
+  const canvas = document.getElementById('sigCanvas');
+  const ctx = canvas.getContext('2d');
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width*ratio; canvas.height = rect.height*ratio;
+  ctx.scale(ratio,ratio);
+  ctx.lineWidth = 2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#191D25';
+  let drawing=false, lastX=0,lastY=0, hasDrawn=false;
+  function pos(e){ const r = canvas.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+  canvas.onpointerdown = (e)=>{ drawing=true; hasDrawn=true; [lastX,lastY]=pos(e); canvas.setPointerCapture(e.pointerId); e.preventDefault(); };
+  canvas.onpointermove = (e)=>{ if(!drawing) return; const [x,y]=pos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); [lastX,lastY]=[x,y]; };
+  canvas.onpointerup = ()=>{ drawing=false; };
+  canvas.onpointerleave = ()=>{ drawing=false; };
+  St.canvas = { el:canvas, ctx:ctx, hasDrawn:()=>hasDrawn, reset:()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasDrawn=false; } };
+}
+
+/* ===================== APP ACTIONS ===================== */
+const App = {
+  async init(){
+    await loadMeuNome();
+    St.records = await fetchAllRecords();
+    St.loading = false;
+    render();
+  },
+  async refresh(){
+    St.loading = true; render();
+    St.records = await fetchAllRecords();
+    St.loading = false; render();
+  },
+  goHome(){ St.view='home'; St.form=null; St.currentId=null; render(); },
+  openForm(){ St.form = emptyForm(); St.view='form'; render(); },
+  openDetail(id){ St.currentId = id; St.view='detail'; render(); },
+  setFilterCat(c){ St.filterCat=c; render(); },
+  setFilterStatus(s){ St.filterStatus=s; render(); },
+  setSearch(v){ St.search=v; render(); },
+  setMeuNome(v){ saveMeuNome(v); },
+
+  selectCategoria(c){
+    St.form.categoria = c;
+    St.form.numero = nextNumero(c);
+    St.form.checklistRisco = {}; St.form.checklistEpi = {};
+    render();
+  },
+  updateField(name, value){ St.form[name] = value; },
+  toggleCheck(section, idx){
+    const map = section==='epi' ? St.form.checklistEpi : St.form.checklistRisco;
+    map[idx] = !map[idx];
+    render();
+  },
+  openSig(role){ St.sigModal = { role }; render(); },
+  openEncerrar(){ St.sigModal = { role:'encerramento' }; render(); },
+  closeSigModal(){
+    const ov = document.getElementById('sigOverlay'); if(ov) ov.remove();
+    stopFaceStream();
+    St.sigModal = null; St.canvas = null;
+  },
+  clearSig(){ if(St.canvas) St.canvas.reset(); },
+  capturePhoto(){
+    const video = document.getElementById('faceVideo');
+    const canvas = document.getElementById('faceCanvas');
+    if(!video || !video.videoWidth){ showToast('Aguarde a câmera carregar e tente novamente'); return; }
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    St.facePhoto = canvas.toDataURL('image/jpeg', 0.85);
+    document.getElementById('facePreview').src = St.facePhoto;
+    document.getElementById('facePreview').style.display = 'block';
+    video.style.display = 'none';
+    document.getElementById('faceCaptureBtn').style.display = 'none';
+    document.getElementById('faceRetakeBtn').style.display = 'block';
+    document.getElementById('faceStatus').textContent = 'Foto capturada. Toque em "Repetir foto" se quiser refazer.';
+  },
+  retakePhoto(){
+    St.facePhoto = null;
+    document.getElementById('facePreview').style.display = 'none';
+    document.getElementById('faceCaptureBtn').style.display = 'block';
+    document.getElementById('faceRetakeBtn').style.display = 'none';
+    const video = document.getElementById('faceVideo'); if(video) video.style.display = 'block';
+    document.getElementById('faceStatus').textContent = 'Posicione o rosto dentro do quadro e toque em "Capturar foto".';
+  },
+  async confirmSig(){
+    const nameEl = document.getElementById('sigName');
+    const nome = nameEl.value.trim();
+    if(!nome){ showToast('Informe o nome antes de assinar'); return; }
+    if(!St.facePhoto){ showToast('Capture a foto de validação facial antes de continuar'); return; }
+    if(!St.canvas || !St.canvas.hasDrawn()){ showToast('Desenhe a assinatura no campo'); return; }
+    const imagem = St.canvas.el.toDataURL('image/png');
+    const foto = St.facePhoto;
+    const role = St.sigModal.role;
+
+    if(role==='encerramento'){
+      const obsEl = document.getElementById('sigObs');
+      const payload = { nome, imagem, foto, observacoes: obsEl? obsEl.value.trim(): '' };
+      const atualizado = await encerrarRecordNoServidor(St.currentId, payload);
+      App.closeSigModal();
+      if(atualizado){
+        const idx = St.records.findIndex(x=>x.id===St.currentId);
+        if(idx>=0) St.records[idx] = atualizado;
+        showToast('PTS encerrada com sucesso');
+        render();
+      } else { showToast('Erro ao salvar. Tente novamente.'); }
+      return;
+    }
+
+    St.form.assinaturas[role] = { nome, dataHora:Date.now(), imagem, foto };
+    if(!St.meuNome) saveMeuNome(nome);
+    App.closeSigModal();
+    render();
+  },
+  updateContato(idx, campo, valor){
+    St.form.contatosEnvio[idx][campo] = valor;
+    if(campo==='tipo') render();
+  },
+  baixarPDF(){
+    const r = St.records.find(x=>x.id===St.currentId);
+    if(!r) return;
+    window.location.href = '/api/pts/'+r.id+'/pdf';
+    // o backend gera o PDF na hora (reportlab) e devolve como download
+  },
+  async enviarPara(idx){
+    const r = St.records.find(x=>x.id===St.currentId);
+    if(!r) return;
+    showToast('Enviando…');
+    try{
+      const res = await fetch('/api/pts/'+r.id+'/enviar', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contato_index: idx })
+      });
+      const data = await res.json();
+      if(data.ok) showToast('PTS enviada com sucesso!');
+      else showToast('Erro ao enviar: '+(data.erro || 'tente novamente'));
+    }catch(e){ showToast('Erro ao enviar. Verifique o servidor.'); }
+  },
+  async submitPTS(){
+    const f = St.form;
+    const prog = checklistProgress(f);
+    if(!(prog.done===prog.total && allSigned(f) && f.local.trim())){ showToast('Preencha todos os itens obrigatórios'); return; }
+    const criado = await criarRecordNoServidor(f);
+    if(criado){
+      St.records.unshift(criado);
+      showToast('PTS emitida com sucesso');
+      St.currentId = criado.id; St.form=null; St.view='detail';
+      render();
+    } else { showToast('Erro ao salvar a PTS. Tente novamente.'); }
+  },
+  async confirmDelete(){
+    if(!confirm('Excluir esta PTS permanentemente? Esta ação não pode ser desfeita.')) return;
+    const ok = await deleteRecordFromStorage(St.currentId);
+    if(ok){
+      St.records = St.records.filter(r=>r.id!==St.currentId);
+      showToast('PTS excluída');
+      App.goHome();
+    } else { showToast('Erro ao excluir.'); }
+  }
+};
+
+App.init();
+</script>
+</body>
+</html>
